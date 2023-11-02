@@ -1,0 +1,68 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "2.9.0.0",
+	"parameters": {
+		"templateBaseUrl": {
+			"defaultValue": "https://cdn.f5.com/product/cloudsolutions/",
+			"metadata": {
+				"description": "The publicly accessible URL where the linked ARM templates are located."
+			},
+			"type": "string"
+		},
+		"artifactLocation": {
+			"defaultValue": "[concat('f5-azure-arm-templates-v2/v', deployment().properties.template.contentVersion, '/examples/')]",
+			"metadata": {
+				"description": "The directory, relative to the templateBaseUrl, where the modules folder is located."
+			},
+			"type": "string"
+		}
+	},
+	"variables": {
+		"deploymentApiVersion": "2019-05-01"
+	},
+	"resources": [
+		{
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "[variables('deploymentApiVersion')]",
+			"name": "accessTemplate",
+			"properties": {
+				"mode": "Incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('templateBaseUrl'), parameters('artifactLocation'), 'modules/access/access.json')]",
+					"contentVersion": "2.9.0.0"
+				},
+				"parameters": {
+					"solutionType": { "value": "standard" },
+					"customRolePermissions": { "value": [ "Microsoft.Resources/subscriptions/resourceGroups/read", "Microsoft.Resources/subscriptions/resourceGroups/list"]	},
+					"customAssignableScopes": { "value": [ "[subscription().subscriptionId]"] },
+					"roleDescription": { "value": "this is a custom role definition for reader" },
+					"roleName": {	"value": "custom-reader" },
+					"keyVaultPermissionsKeys": { "value": [ "get", "list" ]	},
+					"keyVaultPermissionsSecrets": { "value": [ "get", "list" ] },
+					"secretId": { "value": "https://BigIpSecretVault.vault.azure.net/secrets/secretName" },
+					"secretValue": { "value": "" },
+					"userAssignedIdentityName": { "value": "" },
+					"tagValues": { "value": { "application": "f5demoapp", "cost": "f5cost", "environment": "f5env", "group": "f5group", "owner": "f5owner" } }
+				}
+			}
+		}
+	],
+	"outputs": {
+		"roleDefinitionId": {
+			"type": "string",
+			"value": "[reference('accessTemplate').outputs.roleDefinitionId.value]"
+		},
+		"userAssignedIdentityId": {
+			"type": "string",
+			"value": "[reference('accessTemplate').outputs.userAssignedIdentityName.value]"
+		},
+		"keyVaultName": {
+			"type": "string",
+			"value": "[reference('accessTemplate').outputs.keyVaultName.value]"
+		},
+		"secretName": {
+			"type": "string",
+			"value": "[reference('accessTemplate').outputs.secretName.value]"
+		}
+	}
+}

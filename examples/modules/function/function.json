@@ -1,0 +1,217 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+	"contentVersion": "2.9.0.0",
+	"parameters": {
+		"vmssId": {
+			"defaultValue": "",
+			"metadata": {
+				"description": "Supply the fully-qualified resource ID of the VMSS to update."
+			},
+			"type": "string"
+		},
+		"bigIpRuntimeInitConfig": {
+			"defaultValue": "",
+			"metadata": {
+				"description": "Supply a URL to the bigip-runtime-init configuration file in YAML or JSON format, or an escaped JSON string to use for f5-bigip-runtime-init configuration."
+			},
+			"type": "string"
+		},
+		"functionAppName": {
+			"defaultValue": "functionApp",
+			"metadata": {
+				"description": "Supply a name for the function app."
+			},
+			"type": "string"
+		},
+		"functionAppSku": {
+			"defaultValue": {
+				"Tier": "ElasticPremium",
+				"Name": "EP1"
+			},
+			"metadata": {
+				"description": "Enter json configuration to configure the Azure server farm plan premium or appservice sku. See https://learn.microsoft.com/en-us/azure/templates/microsoft.web/serverfarms?pivots=deployment-language-arm-template for supported values."
+			},
+			"type": "object"
+		},
+		"functionAppVnetId": {
+			"defaultValue": "",
+			"metadata": {
+				"description": "The fully qualified resource ID of virtual network where BIG-IQ is deployed."
+			},
+			"type": "string"
+		},
+		"secretId": {
+			"defaultValue": "",
+			"metadata": {
+				"description": "The full URL of the secretId, including KeyVault Name. For example: https://yourvaultname.vault.azure.net/secrets/yoursecretid."
+			},
+			"type": "string"
+		},
+		"tagValues": {
+			"defaultValue": {
+				"application": "f5demoapp",
+				"cost": "f5cost",
+				"environment": "f5env",
+				"group": "f5group",
+				"owner": "f5owner"
+			},
+			"metadata": {
+				"description": "Default key/value resource tags will be added to the resources in this deployment, if you would like the values to be unique adjust them as needed for each key."
+			},
+			"type": "object"
+		},
+		"userAssignManagedIdentity": {
+			"defaultValue": "",
+			"metadata": {
+				"description": "Enter user assigned management identity ID to be associated to vmss. Leave default if not used."
+			},
+			"type": "string"
+		}
+	},
+	"variables": {
+		"applicationInsightsName": "[variables('functionAppName')]",
+		"functionAppName": "[concat(parameters('functionAppName'), '-function')]",
+		"functionAppVnetName": "[if(not(equals(parameters('functionAppVnetId'), '')), last(split(parameters('functionAppVnetId'),'/')), 'functionAppVnet')]",
+		"functionUrl": "https://cdn.f5.com/product/cloudsolutions/f5-cloud-functions/azure/TimerTriggerRevoke/develop/v1.3.0/timer_trigger_revoke.zip",
+		"functionStorageAccountId": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('functionStorageAccountName'))]",
+		"functionStorageAccountName": "[concat(uniquestring(resourceGroup().id), 'azfunctions')]",
+		"functionWorkerRuntime": "python",
+		"hostingPlanName": "[concat(parameters('functionAppName'), '-plan')]",
+		"secretIdSplitDelimiters": [ "https://", "[environment().suffixes.keyvaultDns]" ],
+		"secretIdSplitArray": "[split(parameters('secretId'),variables('secretIdSplitDelimiters'))]",
+		"keyVaultNameVariable": "[variables('secretIdSplitArray')[1]]",
+		"location": "[resourceGroup().location]",
+		"vmssName": "[last(split(parameters('vmssId'),'/'))]",
+		"resourceGroupName": "[split(parameters('vmssId'),'/')[4]]",
+		"secretName": "[concat(parameters('functionAppName'), 'bigiq')]"
+	},
+	"resources": [
+		{
+			"apiVersion": "2021-04-01",
+			"kind": "Storage",
+			"location": "[variables('location')]",
+			"name": "[variables('functionStorageAccountName')]",
+			"sku": {
+				"name": "Standard_LRS"
+			},
+			"tags":"[if(empty(parameters('tagValues')), json('null'), parameters('tagValues'))]",
+			"type": "Microsoft.Storage/storageAccounts"
+		},
+		{
+			"apiVersion": "2021-01-15",
+			"kind": "linux",
+			"location": "[variables('location')]",
+			"name": "[variables('hostingPlanName')]",
+			"properties": {
+				"reserved": true
+			},
+			"sku": "[parameters('functionAppSku')]",
+			"type": "Microsoft.Web/serverfarms"
+		},
+		{
+			"apiVersion": "2021-01-15",
+			"condition": "[not(empty(parameters('userAssignManagedIdentity')))]",
+			"dependsOn": [
+				"[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]"
+			],
+			"identity": {
+				"type": "UserAssigned",
+				"userAssignedIdentities": {
+					"[parameters('userAssignManagedIdentity')]": {}
+				}
+			},
+			"kind": "functionapp",
+			"location": "[variables('location')]",
+			"name": "[variables('functionAppName')]",
+			"properties": {
+				"serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+				"keyVaultReferenceIdentity": "[parameters('userAssignManagedIdentity')]",
+				"siteConfig": {
+					"appSettings": [
+						{
+							"name": "FUNCTIONS_EXTENSION_VERSION",
+							"value": "~3"
+						}
+					],
+					"linuxFxVersion": "PYTHON|3.7"
+				}
+			},
+			"resources": [
+				{
+					"apiVersion": "2021-01-15",
+					"dependsOn": [
+						"[resourceId('Microsoft.Web/sites', variables('functionAppName'))]",
+						"[resourceId('Microsoft.Storage/storageAccounts', variables('functionStorageAccountName'))]",
+						"[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]"
+					],
+					"name": "appsettings",
+					"properties": {
+						"APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('Microsoft.Insights/components/', variables('applicationInsightsName')), '2020-02-02').InstrumentationKey]",
+						"AZURE_CLIENT_ID": "[reference(parameters('userAssignManagedIdentity'), '2018-11-30').clientId]",
+						"AZURE_RESOURCE_GROUP": "[variables('resourceGroupName')]",
+						"AZURE_VMSS_NAME": "[variables('vmssName')]",
+						"AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('functionStorageAccountName'), ';AccountKey=', listKeys(variables('functionStorageAccountId'),'2015-05-01-preview').key1)]",
+						"BIGIQ_PASSWORD": "[concat('@Microsoft.KeyVault(SecretUri=', parameters('secretId'), '/)')]",
+						"F5_DISABLE_SSL_WARNINGS": false,
+						"FUNCTIONS_EXTENSION_VERSION": "~3",
+						"FUNCTIONS_WORKER_RUNTIME": "[variables('functionWorkerRuntime')]",
+						"RUNTIME_INIT_CONFIG": "[parameters('bigIpRuntimeInitConfig')]",
+						"WEBSITE_ENABLE_SYNC_UPDATE_SITE": true,
+						"WEBSITE_NODE_DEFAULT_VERSION": "~12",
+						"WEBSITE_RUN_FROM_PACKAGE": "[variables('functionUrl')]"
+					},
+					"type": "config"
+				},
+				{
+					"apiVersion": "2021-01-15",
+					"condition": "[not(equals(parameters('functionAppVnetId'), ''))]",
+					"dependsOn": [
+						"[resourceId('Microsoft.Web/sites', variables('functionAppName'))]"
+					],
+					"location": "[variables('location')]",
+					"name": "[variables('functionAppVnetName')]",
+					"properties": {
+						"vnetResourceId": "[parameters('functionAppVnetId')]"
+					},
+					"type": "virtualNetworkConnections"
+				}
+			],
+			"type": "Microsoft.Web/sites"
+		},
+		{
+			"apiVersion": "2020-02-02",
+			"location": "[variables('location')]",
+			"name": "[variables('applicationInsightsName')]",
+			"properties": {
+				"ApplicationId": "[variables('applicationInsightsName')]",
+				"Request_Source": "IbizaWebAppExtensionCreate"
+			},
+			"tags": {
+				"[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', variables('applicationInsightsName'))]": "Resource"
+			},
+			"type": "Microsoft.Insights/components"
+		}
+	],
+	"outputs": {
+		"storageAccountId": {
+			"type": "string",
+			"value": "[resourceId('Microsoft.Storage/storageAccounts', variables('functionStorageAccountName'))]"
+		},
+		"hostingPlanId": {
+			"type": "string",
+			"value": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]"
+		},
+		"functionAppId": {
+			"type": "string",
+			"value": "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]"
+		},
+		"keyVaultId": {
+			"type": "string",
+			"value": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultNameVariable'))]"
+		},
+		"applicationInsightsId": {
+			"type": "string",
+			"value": "[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]"
+		}
+	}
+}

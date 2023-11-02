@@ -1,0 +1,27 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "2.9.0.0",
+  "parameters": {
+    "createNatGateway": {
+      "value": false
+    },
+    "numSubnets": {
+      "value": 1
+    },
+    "tagValues": {
+      "value": {
+        "application": "f5demoapp",
+        "cost": "f5cost",
+        "environment": "f5env",
+        "group": "f5group",
+        "owner": "f5owner"
+      }
+    },
+    "vnetAddressPrefix": {
+      "value": "10.0"
+    },
+    "vnetName": {
+      "value": "virtualNetwork"
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "2.9.0.0",
+  "parameters": {
+    "bigIpRuntimeInitConfig": {
+      "value": ""
+    },
+    "functionAppName": {
+      "value": "functionApp"
+    },
+    "functionAppSku": {
+      "value": {
+        "Name": "EP1",
+        "Tier": "ElasticPremium"
+      }
+    },
+    "functionAppVnetId": {
+      "value": ""
+    },
+    "secretId": {
+      "value": ""
+    },
+    "tagValues": {
+      "value": {
+        "application": "f5demoapp",
+        "cost": "f5cost",
+        "environment": "f5env",
+        "group": "f5group",
+        "owner": "f5owner"
+      }
+    },
+    "userAssignManagedIdentity": {
+      "value": ""
+    },
+    "vmssId": {
+      "value": ""
+    }
+  }
+}

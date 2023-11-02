@@ -1,0 +1,89 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "2.9.0.0",
+  "parameters": {
+    "externalLoadBalancerName": {
+      "value": "None"
+    },
+    "internalLoadBalancerName": {
+      "value": "None"
+    },
+    "internalSubnetId": {
+      "value": ""
+    },
+    "loadBalancerRulePorts": {
+      "value": [
+        "80",
+        "443"
+      ]
+    },
+    "nsg0": {
+      "value": [
+        {
+          "destinationPortRanges": [
+            "22",
+            "8443"
+          ],
+          "protocol": "Tcp",
+          "sourceAddressPrefix": ""
+        },
+        {
+          "destinationPortRanges": [
+            "80",
+            "443"
+          ],
+          "protocol": "Tcp",
+          "sourceAddressPrefix": ""
+        }
+      ]
+    },
+    "nsg1": {
+      "value": [
+        {
+          "destinationPortRanges": [
+            "80",
+            "443"
+          ],
+          "protocol": "Tcp",
+          "sourceAddressPrefix": ""
+        }
+      ]
+    },
+    "nsg2": {
+      "value": [
+        {
+          "destinationPortRanges": [
+            "80",
+            "443"
+          ],
+          "protocol": "Tcp",
+          "sourceAddressPrefix": ""
+        }
+      ]
+    },
+    "nsg3": {
+      "value": []
+    },
+    "nsg4": {
+      "value": []
+    },
+    "numberPublicExternalIpAddresses": {
+      "value": 1
+    },
+    "numberPublicMgmtIpAddresses": {
+      "value": 0
+    },
+    "tagValues": {
+      "value": {
+        "application": "f5demoapp",
+        "cost": "f5cost",
+        "environment": "f5env",
+        "group": "f5group",
+        "owner": "f5owner"
+      }
+    },
+    "uniqueString": {
+      "value": ""
+    }
+  }
+}
