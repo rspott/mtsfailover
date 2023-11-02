@@ -51,7 +51,7 @@
       "value": "10.0.0.12"
     },
     "bigIpPasswordSecretId": {
-      "value": ""
+      "value": "https://drspott-external-02.vault.azure.net/secrets/BigIPPassword/ef19e5f61bad49329155b4fff3b2bce0"
     },
     "bigIpPasswordSecretValue": {
       "value": ""
