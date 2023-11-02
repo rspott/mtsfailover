@@ -246,7 +246,7 @@
       "type": "bool"
     },
     "bigIpUserAssignManagedIdentity": {
-      "defaultValue": "",
+      "defaultValue": "/subscriptions/bef0d860-d056-486f-a9f7-03199e5d114f/resourcegroups/central/providers/Microsoft.ManagedIdentity/userAssignedIdentities/BigIPManagedID",
       "metadata": {
         "description": "Enter user assigned management identity ID to be associated to virtual machine. Leave default if not used."
       },

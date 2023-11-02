@@ -75,7 +75,7 @@
       "value": "https://cdn.f5.com/product/cloudsolutions/f5-bigip-runtime-init/v1.6.2/dist/f5-bigip-runtime-init-1.6.2-1.gz.run"
     },
     "bigIpUserAssignManagedIdentity": {
-      "value": ""
+      "value": "/subscriptions/bef0d860-d056-486f-a9f7-03199e5d114f/resourcegroups/central/providers/Microsoft.ManagedIdentity/userAssignedIdentities/BigIPManagedID"
     },
     "cfeStorageAccountName": {
       "value": ""
